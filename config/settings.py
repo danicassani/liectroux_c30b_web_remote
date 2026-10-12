@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
-DEBUG = os.getenv('DJANGO_DEBUG', '0') == '1'
+DEBUG = os.getenv('DJANGO_DEBUG', '1') == '1'
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '')
 if not SECRET_KEY:
     if not DEBUG:

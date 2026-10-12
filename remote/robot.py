@@ -61,8 +61,6 @@ class Robot:
         def send(device):
             if action == 'start':
                 _validate(device.set_value(27, 'auto'))
-                time.sleep(1)
-                _validate(device.set_value(25, True))
             elif action == 'stop':
                 _validate(device.set_value(25, False))
             else:
