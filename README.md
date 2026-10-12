@@ -54,3 +54,7 @@ Las pruebas verifican la secuencia exacta de comandos, errores de red, cierre de
 ## Flujo de trabajo
 
 Cada tarea se desarrolla en una rama nueva y termina con un pull request. No subir credenciales ni capturas privadas del robot.
+
+## Slider de succión
+
+El slider selecciona niveles discretos y envía DPS 30 únicamente al pulsar **Aplicar succión**. En demo incluye Suave (`gentle`), Normal (`normal`) y Fuerte (`strong`). Para control real configura `ROBOT_SUCTION_LEVELS` con los enums admitidos por tu firmware, ordenados de menor a mayor, por ejemplo `gentle,normal,strong` **solo si has confirmado esos valores**. Sin esta variable, el control real permanece desactivado. No se presupone que `eco` o `max` existan. El nivel actual se selecciona cuando coincide con uno de los configurados; si no coincide, la web avisa de que no se conoce.

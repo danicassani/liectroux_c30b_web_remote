@@ -78,3 +78,45 @@ class WebTests(TestCase):
         robot.return_value.command.side_effect = RobotError('Sin conexión')
         robot.return_value.status.return_value = {}
         self.assertContains(self.client.post('/command/start/', follow=True), 'Sin conexión')
+
+@override_settings(ROBOT_SUCTION_LEVELS=('gentle', 'normal', 'strong'))
+@override_settings(ROBOT_DEMO=False, ROBOT_DEVICE_ID="test", ROBOT_IP="192.0.2.1", ROBOT_LOCAL_KEY="test-key")
+class SuctionProtocolTests(SimpleTestCase):
+    setUp = ProtocolTests.setUp
+    def test_suction_writes_only_dps30(self):
+        Robot().set_suction('strong')
+        self.device.set_value.assert_called_once_with(30, 'strong')
+        self.device.close.assert_called_once()
+
+    def test_unknown_value_never_opens_connection(self):
+        with self.assertRaises(ValueError):
+            Robot().set_suction('arbitrary')
+        self.factory.assert_not_called()
+
+@override_settings(ROBOT_DEMO=True, ROBOT_SUCTION_LEVELS=('gentle', 'normal', 'strong'))
+class SuctionWebTests(TestCase):
+    setUp = WebTests.setUp
+    def test_slider_applies_and_reflects_level(self):
+        response = self.client.post('/suction/', {'level': '2'}, follow=True)
+        self.assertContains(response, 'strong')
+        self.assertContains(response, 'value="2"')
+        self.assertEqual(Robot().status()['30'], 'strong')
+
+    def test_invalid_index_does_not_send(self):
+        with patch('remote.views.Robot') as robot:
+            for value in ['-1', '3', '1.5', 'strong', '']:
+                self.assertEqual(self.client.post('/suction/', {'level': value}).status_code, 400)
+            robot.assert_not_called()
+
+    def test_suction_requires_login_post_and_csrf(self):
+        self.assertEqual(self.client.get('/suction/').status_code, 405)
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        self.assertEqual(client.post('/suction/', {'level': '1'}).status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.client.post('/suction/', {'level': '1'}).status_code, 302)
+
+    @override_settings(ROBOT_SUCTION_LEVELS=())
+    def test_unconfigured_levels_cannot_be_sent(self):
+        self.assertContains(self.client.get('/'), 'Configura los niveles admitidos')
+        self.assertEqual(self.client.post('/suction/', {'level': '0'}).status_code, 400)

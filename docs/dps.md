@@ -30,3 +30,7 @@ La fuente más fiable es el esquema Tuya del producto/firmware del robot: IDs, c
 No publiques la clave local, identificador del dispositivo, credenciales de Tuya ni archivos `devices.json` o `tinytuya.json`. Comparte únicamente el esquema sanitizado. Para corroborar comportamiento, captura el estado local antes y después de iniciar, pausar y enviar a la base desde la app oficial. Leer estado no prueba todos los enums admitidos. No se deben probar valores de escritura a ciegas.
 
 DPS 102 queda pendiente de capturas y de identificación de su formato. No hay decodificador de mapas en esta versión.
+
+## Control de succión
+
+El slider escribe DPS 30 usando únicamente los enums configurados en `ROBOT_SUCTION_LEVELS`. La asignación de escritura a 30 procede de la tabla aportada, y todavía requiere confirmación en el YW509. Por ello el control real no tiene niveles habilitados por defecto. Los niveles `gentle,normal,strong` de demo son ejemplos; no constituyen validación del firmware. El usuario debe verificar ID y enums del esquema antes de habilitar el control real.

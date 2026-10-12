@@ -26,3 +26,5 @@ ROBOT_DEMO = os.getenv('ROBOT_DEMO', '0') == '1'
 ROBOT_DEVICE_ID = os.getenv('ROBOT_DEVICE_ID', '')
 ROBOT_IP = os.getenv('ROBOT_IP', '')
 ROBOT_LOCAL_KEY = os.getenv('ROBOT_LOCAL_KEY', '')
+# Ordered enums confirmed for the owner's firmware; demo provides sample levels.
+ROBOT_SUCTION_LEVELS = tuple(value.strip() for value in os.getenv('ROBOT_SUCTION_LEVELS', 'gentle,normal,strong' if ROBOT_DEMO else '').split(',') if value.strip())

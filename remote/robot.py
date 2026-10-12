@@ -68,3 +68,12 @@ class Robot:
             else:
                 _validate(device.set_value(27, 'chargego'))
         self._run(send)
+
+    def set_suction(self, value):
+        if value not in settings.ROBOT_SUCTION_LEVELS:
+            raise ValueError('Unsupported suction level')
+        if settings.ROBOT_DEMO:
+            with _lock:
+                _demo['30'] = value
+            return
+        self._run(lambda device: _validate(device.set_value(30, value)))

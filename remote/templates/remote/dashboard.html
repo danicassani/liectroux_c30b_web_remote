@@ -1,4 +1,4 @@
-{% extends 'remote/base.html' %}{% block content %}
+{% extends 'remote/base.html' %}{% load static %}{% block content %}
 <header><div><span class="eyebrow">TU HOGAR, A PUNTO</span><h1>Liectroux <span>YW509</span></h1></div><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="secondary">Cerrar sesión</button></form></header>
 {% if demo %}<p class="notice">Modo demostración · Los botones simulan órdenes y no mueven el robot.</p>{% endif %}
 {% for message in messages %}<p role="status" class="notice {{ message.tags }}">{{ message }}</p>{% endfor %}
@@ -8,6 +8,20 @@
 <form method="post" action="{% url 'command' 'start' %}">{% csrf_token %}<button class="start"><span>▶</span>Iniciar limpieza<small>Limpieza automática</small></button></form>
 <form method="post" action="{% url 'command' 'stop' %}">{% csrf_token %}<button><span>■</span>Parar<small>Detener la limpieza</small></button></form>
 <form method="post" action="{% url 'command' 'dock' %}">{% csrf_token %}<button><span>⌂</span>Volver a la base<small>Regresar a cargar</small></button></form>
+</section>
+<section class="suction-panel">
+<h2>Potencia de succión</h2>
+{% if suctions %}
+{% if not suction_known %}<p>No se ha podido identificar el nivel actual. Selecciona el que quieras aplicar.</p>{% endif %}
+<form method="post" action="{% url 'suction' %}">{% csrf_token %}
+<label for="suction-level">Nivel seleccionado: <output id="suction-label" for="suction-level"></output></label>
+<input type="range" id="suction-level" name="level" min="0" max="{{ suction_max }}" step="1" value="{{ suction_selected }}" aria-describedby="suction-help">
+<p id="suction-help">El cambio se envía al pulsar Aplicar.</p>
+<button class="start">Aplicar succión</button>
+</form>
+{{ suctions|json_script:"suction-levels" }}
+<script src="{% static 'remote/suction.js' %}" defer></script>
+{% else %}<p>Configura los niveles admitidos por tu robot para activar este control.</p>{% endif %}
 </section>
 <section class="stats"><div>Modo<strong>{{ mode }}</strong></div><div>Succión<strong>{{ suction }}</strong></div><div>Área limpiada<strong>{{ area }} m²</strong></div><div>Tiempo<strong>{{ duration }} min</strong></div></section>
 {% if alarm %}<p class="notice error">Alarma del robot: {{ alarm }}</p>{% endif %}
