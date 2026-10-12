@@ -1,0 +1,15 @@
+{% extends 'remote/base.html' %}{% block content %}
+<header><div><span class="eyebrow">TU HOGAR, A PUNTO</span><h1>Liectroux <span>YW509</span></h1></div><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="secondary">Cerrar sesión</button></form></header>
+{% if demo %}<p class="notice">Modo demostración · Los botones simulan órdenes y no mueven el robot.</p>{% endif %}
+{% for message in messages %}<p role="status" class="notice {{ message.tags }}">{{ message }}</p>{% endfor %}
+{% if error %}<p role="alert" class="notice error">{{ error }}</p>{% endif %}
+<section class="hero"><div class="robot" aria-hidden="true">◉</div><div><p class="eyebrow">ESTADO ACTUAL</p><h2>{{ state }}</h2><p>Batería <strong>{{ battery }} %</strong></p><a href="{% url 'dashboard' %}">Actualizar estado ↻</a></div></section>
+<section class="controls" aria-label="Control del robot">
+<form method="post" action="{% url 'command' 'start' %}">{% csrf_token %}<button class="start"><span>▶</span>Iniciar limpieza<small>Limpieza automática</small></button></form>
+<form method="post" action="{% url 'command' 'stop' %}">{% csrf_token %}<button><span>■</span>Parar<small>Detener la limpieza</small></button></form>
+<form method="post" action="{% url 'command' 'dock' %}">{% csrf_token %}<button><span>⌂</span>Volver a la base<small>Regresar a cargar</small></button></form>
+</section>
+<section class="stats"><div>Modo<strong>{{ mode }}</strong></div><div>Succión<strong>{{ suction }}</strong></div><div>Área limpiada<strong>{{ area }} m²</strong></div><div>Tiempo<strong>{{ duration }} min</strong></div></section>
+{% if alarm %}<p class="notice error">Alarma del robot: {{ alarm }}</p>{% endif %}
+<p class="footnote">El estado refleja la última consulta al robot. Actualízalo tras enviar una orden.</p>
+{% endblock %}
