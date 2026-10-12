@@ -34,3 +34,18 @@ DPS 102 queda pendiente de capturas y de identificación de su formato. No hay d
 ## Control de succión
 
 El slider escribe DPS 30 usando únicamente los enums configurados en `ROBOT_SUCTION_LEVELS`. La asignación de escritura a 30 procede de la tabla aportada, y todavía requiere confirmación en el YW509. Por ello el control real no tiene niveles habilitados por defecto. Los niveles `gentle,normal,strong` de demo son ejemplos; no constituyen validación del firmware. El usuario debe verificar ID y enums del esquema antes de habilitar el control real.
+
+## Mapas: resultado de la investigación
+
+El propietario confirmó que la lectura local de DPS 102 de su script **no proporciona datos útiles** en su YW509. Se descarta ese método como solución para obtener su mapa. Tampoco hay evidencia de un valor que se pueda escribir en 102 para solicitarlo.
+
+Fuentes consultadas el 12 de octubre de 2026:
+
+- [TinyTuya: consulta local](https://github.com/jasonacox/tinytuya/blob/master/tinytuya/core/XenonDevice.py): `set_dpsUsed` selecciona DPS y `status()` envía `DP_QUERY`; no implica generar un mapa.
+- [Tuya Cloud Map Extractor](https://github.com/oven-lab/tuya_cloud_map_extractor): utiliza Sweeping Robot Open API para aspiradoras láser, incluye XR500, no YW509; está sin mantenimiento.
+- [Discusión de captura local](https://github.com/oven-lab/tuya_cloud_map_extractor/issues/21): el autor describe un DPS de solicitud y otro de comunicaciones en su dispositivo, sin IDs universales.
+- [Tuya Vacuum Maps](https://github.com/jaidenlabelle/tuya-vacuum-maps) y su dependencia `tuya-vacuum==0.1.8`, `tuya_vacuum/vacuum.py`: la solicitud es `GET /v1.0/users/sweepers/file/{device_id}/realtime-map`. El resultado contiene `map_url` y `map_type`; 0 corresponde a mapa y 1 a trayectoria. Los bytes se descargan de las URLs proporcionadas.
+- [Ejemplo de descarga del proyecto](https://github.com/jaidenlabelle/tuya-vacuum-maps/blob/main/scripts/download_maps.py): muestra la misma ruta, aunque su importación apunta a un módulo que ya no está en el checkout; la dependencia actual confirma el endpoint.
+- [TinyTuya issue 551](https://github.com/jasonacox/tinytuya/issues/551): distintos reportes sobre Lefant y Cecotec; algunas respuestas son análisis automatizados, no un esquema validado. No se usan sus IDs ni `get_both` para el YW509.
+
+El comando `download_map` implementa la ruta cloud encontrada, no una lectura DPS 102. Guarda bytes sin interpretar. **Su compatibilidad con YW509 y su acceso real no han sido comprobados**: no hay credenciales/proyecto Tuya disponibles. No escribe DPS ni inicia limpieza. Si se requiere una solución exclusivamente local, falta identificar en el esquema del firmware el trigger y transporte de mapas; no se enviarán comandos de otro modelo a ciegas.

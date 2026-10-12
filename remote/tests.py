@@ -120,3 +120,62 @@ class SuctionWebTests(TestCase):
     def test_unconfigured_levels_cannot_be_sent(self):
         self.assertContains(self.client.get('/'), 'Configura los niveles admitidos')
         self.assertEqual(self.client.post('/suction/', {'level': '0'}).status_code, 400)
+
+class CloudMapTests(SimpleTestCase):
+    def test_cloud_map_saves_exact_bytes_and_private_files(self):
+        import os, tempfile, stat
+        from pathlib import Path
+        from io import StringIO
+        from django.core.management import call_command
+        env = {'TUYA_CLIENT_ID': 'test-id', 'TUYA_CLIENT_SECRET': 'test-secret', 'TUYA_REGION': 'eu', 'ROBOT_DEVICE_ID': 'robot-test'}
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, env), patch('remote.management.commands.download_map.tinytuya.Cloud') as cloud, patch('remote.management.commands.download_map.requests.get') as get:
+            cloud.return_value.cloudrequest.return_value = {'success': True, 'result': [{'map_type': 0, 'map_url': 'https://storage.example/map?signed=secret'}, {'map_type': 1, 'map_url': 'https://storage.example/path'}]}
+            response = get.return_value.__enter__.return_value
+            response.status_code = 200
+            response.iter_content.side_effect = [[b'\x00\xffraw'], [b'path']]
+            log = StringIO()
+            call_command('download_map', output_dir=directory, stdout=log)
+            cloud.return_value.cloudrequest.assert_called_once_with('/v1.0/users/sweepers/file/robot-test/realtime-map', action='GET')
+            files = sorted(Path(directory).glob('*/*.bin'))
+            self.assertEqual([p.read_bytes() for p in files], [b'\x00\xffraw', b'path'])
+            self.assertTrue(all(stat.S_IMODE(p.stat().st_mode) == 0o600 for p in files))
+            self.assertNotIn('signed', log.getvalue())
+            self.assertFalse(get.call_args.kwargs['allow_redirects'])
+
+    def test_missing_credentials_prevents_network(self):
+        import os
+        from django.core.management import call_command, CommandError
+        with patch.dict(os.environ, {}, clear=True), patch('remote.management.commands.download_map.tinytuya.Cloud') as cloud:
+            with self.assertRaises(CommandError):
+                call_command('download_map')
+            cloud.assert_not_called()
+
+    def test_api_reject_and_unsafe_urls_do_not_download(self):
+        import os
+        from django.core.management import call_command, CommandError
+        env = {'TUYA_CLIENT_ID': 'test', 'TUYA_CLIENT_SECRET': 'test', 'TUYA_REGION': 'eu', 'ROBOT_DEVICE_ID': 'test'}
+        with patch.dict(os.environ, env), patch('remote.management.commands.download_map.tinytuya.Cloud') as cloud, patch('remote.management.commands.download_map.requests.get') as get:
+            for response in [{'success': False, 'msg': 'private-secret'}, {'success': True, 'result': []}, {'success': True, 'result': [{'map_type': 0, 'map_url': 'http://storage.example/map'}]}]:
+                cloud.return_value.cloudrequest.return_value = response
+                with self.assertRaises(CommandError) as caught:
+                    call_command('download_map')
+                self.assertNotIn('private-secret', str(caught.exception))
+            get.assert_not_called()
+
+    def test_partial_download_removed(self):
+        import os, tempfile
+        from pathlib import Path
+        from django.core.management import call_command, CommandError
+        env = {'TUYA_CLIENT_ID': 'test', 'TUYA_CLIENT_SECRET': 'test', 'TUYA_REGION': 'eu', 'ROBOT_DEVICE_ID': 'test'}
+        def chunks(*args):
+            yield b'partial'
+            raise OSError('signed-private-url')
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, env), patch('remote.management.commands.download_map.tinytuya.Cloud') as cloud, patch('remote.management.commands.download_map.requests.get') as get:
+            cloud.return_value.cloudrequest.return_value = {'success': True, 'result': [{'map_type': 0, 'map_url': 'https://storage.example/map'}]}
+            response = get.return_value.__enter__.return_value
+            response.status_code = 200
+            response.iter_content.side_effect = chunks
+            with self.assertRaises(CommandError) as caught:
+                call_command('download_map', output_dir=directory)
+            self.assertNotIn('signed-private-url', str(caught.exception))
+            self.assertEqual(list(Path(directory).iterdir()), [])

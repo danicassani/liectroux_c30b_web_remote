@@ -58,3 +58,21 @@ Cada tarea se desarrolla en una rama nueva y termina con un pull request. No sub
 ## Slider de succión
 
 El slider selecciona niveles discretos y envía DPS 30 únicamente al pulsar **Aplicar succión**. En demo incluye Suave (`gentle`), Normal (`normal`) y Fuerte (`strong`). Para control real configura `ROBOT_SUCTION_LEVELS` con los enums admitidos por tu firmware, ordenados de menor a mayor, por ejemplo `gentle,normal,strong` **solo si has confirmado esos valores**. Sin esta variable, el control real permanece desactivado. No se presupone que `eco` o `max` existan. El nivel actual se selecciona cuando coincide con uno de los configurados; si no coincide, la web avisa de que no se conoce.
+
+## Descargar archivos del mapa (Tuya Cloud)
+
+La lectura local de DPS 102 ya fue probada por el propietario y no proporciona el mapa. La alternativa investigada es la API cloud de aspiradoras. **YW509 aún no está confirmado como compatible**; consulta [fuentes y limitaciones](docs/dps.md).
+
+Necesita un proyecto Tuya IoT vinculado al robot, permiso **Sweeping Robot Open API**, y estas variables del proceso: `TUYA_CLIENT_ID`, `TUYA_CLIENT_SECRET`, `TUYA_REGION` y `ROBOT_DEVICE_ID`. Configura los valores de forma privada, nunca en Git ni en chat. La región debe ser la del proyecto: `cn`, `us`, `us-e`, `eu`, `eu-w` o `in`.
+
+Desde la raíz del repositorio:
+
+```sh
+DJANGO_DEBUG=1 .venv/bin/python manage.py download_map
+```
+
+Se consulta `/v1.0/users/sweepers/file/{device_id}/realtime-map` y se descargan los archivos en `captures/map-<id>/`: `*-layout.bin` (mapa) y `*-path.bin` (trayectoria). No se decodifican. Cada ejecución usa un directorio único y archivos privados 0600, ignorados por Git. Las URLs firmadas no se guardan ni muestran. `--output-dir` permite otro directorio; mantenlo fuera de Git. Si falla una descarga, se elimina su archivo parcial y se conservan los archivos completos anteriores.
+
+Requiere HTTPS al host regional de Tuya y a los destinos de almacenamiento devueltos por la API. Si el entorno restringe red, habilita esos destinos concretos. No hay modo demo para esta descarga: las pruebas usan respuestas simuladas, no archivos del robot.
+
+La app configurada no basta para acceder a esta API. Para preparar el acceso, sigue la [configuración Tuya IoT de la integración](https://github.com/oven-lab/tuya_cloud_map_extractor#prerequisites): crea un proyecto cloud en el centro de datos correcto, vincula tu cuenta de Smart Life/Tuya mediante QR desde el proyecto y autoriza Sweeping Robot Open API si está disponible para tu cuenta. Verifica condiciones y disponibilidad del servicio en Tuya antes de activarlo. El robot debe aparecer en los dispositivos del proyecto. Guarda Client ID y Client Secret de forma privada. No hace falta cambiar la lógica de los botones ni conectar el robot directamente a este entorno cloud.

@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Private map downloads and Tuya credentials
+captures/
+devices.json
+tinytuya.json
